@@ -1,11 +1,11 @@
 #include "ui/ui.h"
-#include<stdio.h>
-#include<Arduino.h>
+#include <stdio.h>
+#include <Arduino.h>
 #include <Preferences.h>
 #include "OneButton.h"
 #include <SimpleKalmanFilter.h>
+#include "consts.h"
 
-#define SPEED_PIN 38
 #define SPEED_NODE_PER_CYCLE 5
 
 unsigned long speedLastUpdateTs = 0;
@@ -14,15 +14,17 @@ unsigned long mileageLastUpdateTs = 0;
 volatile long speedCounter = 0;
 long totalCount = 0;
 long totalDistance = 0;
-#define BUFFER_SIZE  3
+#define BUFFER_SIZE 3
 int speedBuf[BUFFER_SIZE];
 int bufIndex = 0;
 
+TaskHandle_t updateSpeedStatHandler;
+TaskHandle_t updateSpeedTickHandler;
 
 Preferences prefs;
 SimpleKalmanFilter simpleKalmanFilter(10, 10, 0.1);
 
-//OneButton speedBtn;
+// OneButton speedBtn;
 
 void IRAM_ATTR updateSpeedCounter()
 {
@@ -41,7 +43,7 @@ void updateSpeed(unsigned long now)
     totalCount += count;
     speedCounter = 0;
     // speed is zero when no update after 10s
-    
+
     if (count > 0)
     {
         unsigned long timeDiff = now - speedLastUpdateTs;
@@ -55,7 +57,8 @@ void updateSpeed(unsigned long now)
     bufIndex = (bufIndex + 1) % BUFFER_SIZE;
 
     speed = 0;
-    for (int i = 0; i < BUFFER_SIZE; i ++) {
+    for (int i = 0; i < BUFFER_SIZE; i++)
+    {
         speed = speed + speedBuf[i];
     }
 
@@ -63,12 +66,11 @@ void updateSpeed(unsigned long now)
     Serial.println(speed);
     speed = speed / BUFFER_SIZE;
 
-
-    if (speed > 20) {
+    if (speed > 20)
+    {
         speed = 20;
     }
-    
-    
+
     char data[30];
     sprintf(data, "%d", speed);
     lv_label_set_text(ui_speedValue, data);
@@ -83,7 +85,7 @@ void updateSpeed(unsigned long now)
     char currentDistance[30];
 
     int shortDis = distance % 1000;
-    int longDis = distance /1000;
+    int longDis = distance / 1000;
     sprintf(currentDistance, "%dm", shortDis);
     lv_label_set_text(ui_currentMile, currentDistance);
 
@@ -91,7 +93,8 @@ void updateSpeed(unsigned long now)
     lv_label_set_text(ui_kmLabel, currentDistance);
 
     long newTotalDistance = totalDistance + (int)((totalCount * 1.31) / (SPEED_NODE_PER_CYCLE * 1000));
-    if (newTotalDistance < 0) {
+    if (newTotalDistance < 0)
+    {
         newTotalDistance = 0;
     }
     char totalDistance[30];
@@ -111,39 +114,69 @@ void saveTotalDistance(unsigned long now)
     }
 }
 
-void initInSlowCoreForSpeed() {
+
+void updateSpeedStatTask(void *param);
+
+void updateSpeedTickTask(void *param);
+
+void initSpeed()
+{
     prefs.begin("bike_gui");
     mileageLastUpdateTs = millis();
     totalDistance = prefs.getLong64("mileageV2", 0);
-    if (totalDistance < 0) {
+    if (totalDistance < 0)
+    {
         totalDistance = 0;
     }
+    pinMode(SPEED_PIN, INPUT_PULLUP);
+
+    attachInterrupt(digitalPinToInterrupt(SPEED_PIN), updateSpeedCounter, FALLING);
+
+    xTaskCreate(
+        updateSpeedStatTask,    /* Function to implement the task */
+        "updateSpeedStatTask",  /* Name of the task */
+        10000,                  /* Stack size in words */
+        NULL,                   /* Task input parameter */
+        1,                      /* Priority of the task */
+        &updateSpeedStatHandler /* Task handle. */
+    );
+
+    xTaskCreate(
+        updateSpeedTickTask,    /* Function to implement the task */
+        "updateSpeedTickTask",  /* Name of the task */
+        10000,                  /* Stack size in words */
+        NULL,                   /* Task input parameter */
+        10,                     /* Priority of the task */
+        &updateSpeedTickHandler /* Task handle. */
+    );
 }
 
 void IRAM_ATTR checkSpeedTicks()
 {
     // include all buttons here to be checked
-    //speedBtn.tick();
+    // speedBtn.tick();
 }
 
+void updateSpeedStatTask(void *param)
+{
+    for (;;)
+    {
+        unsigned long now = millis();
+        saveTotalDistance(now);
 
-void initInFastCoreForSpeed() {
-    pinMode(SPEED_PIN, INPUT_PULLUP);
+        updateSpeed(now);
+        speedLastUpdateTs = now;
 
-    attachInterrupt(digitalPinToInterrupt(SPEED_PIN), updateSpeedCounter, FALLING);
-}
-
-void updateInSlowCoreForSpeed(unsigned long now) {
-    saveTotalDistance(now);
-    if (now - speedLastUpdateTs < 400) {
-        return;
+        vTaskDelay(400 / portTICK_PERIOD_MS);
     }
-    
-    updateSpeed(now);
-    speedLastUpdateTs = now;
 }
 
-void updateInFastCoreForSpeed() {
-    checkSpeedTicks();
-}
+void updateSpeedTickTask(void *param)
+{
 
+    for (;;)
+    {
+        checkSpeedTicks();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}

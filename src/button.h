@@ -14,8 +14,6 @@ volatile int alarmStatus = 0;
 
 unsigned long lightLastUpdateTs = 0;
 
-#define SPEED_NODE_PER_CYCLE 6
-
 OneButton turnLeftBtn;
 OneButton turnRightBtn;
 OneButton alarmBtn;

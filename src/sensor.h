@@ -11,55 +11,6 @@ Adafruit_AHTX0 aht;
 
 TaskHandle_t updateSensorHandler;
 
-void scanI2c()
-{
-  byte error, address;
-  int nDevices;
-
-  Serial.println("Scanning...");
-
-  nDevices = 0;
-  for (address = 1; address < 127; address++)
-  {
-    // The i2c_scanner uses the return value of
-    // the Write.endTransmisstion to see if
-    // a device did acknowledge to the address.
-    Wire.beginTransmission(address);
-    error = Wire.endTransmission();
-
-    if (error == 0)
-    {
-      Serial.print("I2C device found at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.print(address, HEX);
-      Serial.println("  !");
-
-      nDevices++;
-    }
-    else if (error == 4)
-    {
-      Serial.print("Unknown error at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.println(address, HEX);
-    }
-    else
-    {
-
-      Serial.print("Unknown error at address 0x");
-      Serial.print(address, HEX);
-      Serial.print("with code");
-      Serial.println(error);
-    }
-  }
-  if (nDevices == 0)
-    Serial.println("No I2C devices found\n");
-  else
-    Serial.println("done\n");
-
-  delay(5000); // wait 5 seconds for next scan
-}
 
 void updateTemperature()
 {
@@ -126,9 +77,13 @@ void updateBatteryLevel()
 
   // Compute load voltage, power, and milliamp-hours.
   float loadvoltage = busvoltage + (shuntvoltage / 1000);
+
+   Serial.print("battery voltage: ");
+   Serial.println(loadvoltage);
+
   // range 7.4-8.4?
-  float minV = 7.4;
-  float maxV = 8.4;
+  float minV = 3.7;
+  float maxV = 4.2;
   int percentage = (int)((100 * (loadvoltage - minV)) / (maxV - minV));
   // update battery
   if (percentage > 100)
@@ -139,8 +94,6 @@ void updateBatteryLevel()
   {
     percentage = 0;
   }
-  // Serial.print("battery voltage: ");
-  // Serial.println(loadvoltage);
 
   char data[20];
   sprintf(data, "%d%%", percentage);

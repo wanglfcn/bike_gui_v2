@@ -14,6 +14,7 @@ images/ui_img_range_bg_png.c
 images/ui_img_range_knob_png.c
 images/ui_img_clk2_png.c
 images/ui_img_left_arr_png.c
+images/ui_img_gps_png.c
 fonts/ui_font_HollowPoint.c
 fonts/ui_font_HollowPoint22.c
 fonts/ui_font_HollowPoint32.c

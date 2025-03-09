@@ -26,6 +26,7 @@ int bufIndex = 0;
 TaskHandle_t updateSpeedStatHandler;
 TaskHandle_t updateSpeedTickHandler;
 TaskHandle_t updateGPSHandler;
+TaskHandle_t blinkGPSHandler;
 
 SoftwareSerial ss(UART_RX, UART_TX);
 TinyGPSPlus gps;
@@ -69,6 +70,10 @@ void updateSpeed(unsigned long now)
     for (int i = 0; i < BUFFER_SIZE; i++)
     {
         speed = speed + speedBuf[i];
+    }
+
+    if (gpsIsValid == 1) {
+        speed = gpsSpeed;
     }
 
     Serial.print("speed sum");
@@ -130,6 +135,8 @@ void updateSpeedTickTask(void *param);
 
 void updateGPSTask(void *param);
 
+void blinkGPSTask(void *param);
+
 void initSpeed()
 {
     prefs.begin("bike_gui");
@@ -171,6 +178,15 @@ void initSpeed()
         10,                     /* Priority of the task */
         &updateGPSHandler /* Task handle. */
     );
+    xTaskCreate(
+        blinkGPSTask,    /* Function to implement the task */
+        "blinkGPSTask",  /* Name of the task */
+        10000,                  /* Stack size in words */
+        NULL,                   /* Task input parameter */
+        10,                     /* Priority of the task */
+        &blinkGPSHandler /* Task handle. */
+    );
+
 
 }
 
@@ -201,6 +217,22 @@ void updateSpeedTickTask(void *param)
     {
         checkSpeedTicks();
         vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
+
+
+void blinkGPSTask(void *param)
+{
+    for (;;) {
+        if (gpsIsValid == 0) {
+            lv_obj_add_flag(ui_gpsIcon, LV_OBJ_FLAG_HIDDEN);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            lv_obj_clear_flag(ui_gpsIcon, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_clear_flag(ui_gpsIcon, LV_OBJ_FLAG_HIDDEN);
+        }
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 

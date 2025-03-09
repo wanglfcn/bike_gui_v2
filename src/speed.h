@@ -5,6 +5,8 @@
 #include "OneButton.h"
 #include <SimpleKalmanFilter.h>
 #include "consts.h"
+#include "SoftwareSerial.h"
+#include "TinyGPSPlus.h"
 
 #define SPEED_NODE_PER_CYCLE 5
 
@@ -12,6 +14,9 @@ unsigned long speedLastUpdateTs = 0;
 unsigned long mileageLastUpdateTs = 0;
 
 volatile long speedCounter = 0;
+volatile double gpsSpeed = 0;
+volatile int gpsIsValid = 0;
+
 long totalCount = 0;
 long totalDistance = 0;
 #define BUFFER_SIZE 3
@@ -20,6 +25,10 @@ int bufIndex = 0;
 
 TaskHandle_t updateSpeedStatHandler;
 TaskHandle_t updateSpeedTickHandler;
+TaskHandle_t updateGPSHandler;
+
+SoftwareSerial ss(UART_RX, UART_TX);
+TinyGPSPlus gps;
 
 Preferences prefs;
 SimpleKalmanFilter simpleKalmanFilter(10, 10, 0.1);
@@ -119,6 +128,8 @@ void updateSpeedStatTask(void *param);
 
 void updateSpeedTickTask(void *param);
 
+void updateGPSTask(void *param);
+
 void initSpeed()
 {
     prefs.begin("bike_gui");
@@ -131,6 +142,8 @@ void initSpeed()
     pinMode(SPEED_PIN, INPUT_PULLUP);
 
     attachInterrupt(digitalPinToInterrupt(SPEED_PIN), updateSpeedCounter, FALLING);
+
+    ss.begin(9600);
 
     xTaskCreate(
         updateSpeedStatTask,    /* Function to implement the task */
@@ -149,6 +162,16 @@ void initSpeed()
         10,                     /* Priority of the task */
         &updateSpeedTickHandler /* Task handle. */
     );
+
+    xTaskCreate(
+        updateGPSTask,    /* Function to implement the task */
+        "updateGPSTask",  /* Name of the task */
+        10000,                  /* Stack size in words */
+        NULL,                   /* Task input parameter */
+        10,                     /* Priority of the task */
+        &updateGPSHandler /* Task handle. */
+    );
+
 }
 
 void IRAM_ATTR checkSpeedTicks()
@@ -177,6 +200,31 @@ void updateSpeedTickTask(void *param)
     for (;;)
     {
         checkSpeedTicks();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
+
+void updateGPSTask(void *param)
+{
+    for (;;)
+    {
+        while (ss.available())
+        {
+            if (gps.encode(ss.read()))
+            {
+
+                if (gps.satellites.isValid() && gps.satellites.isUpdated())
+                {
+                    uint32_t stats = gps.satellites.value();
+                }
+                if (gps.speed.isValid() && gps.speed.isUpdated())
+                {
+                    gpsIsValid = 1;
+                    gpsSpeed = gps.speed.kmph();
+                }
+            }
+        }
+
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }

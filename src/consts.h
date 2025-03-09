@@ -10,12 +10,12 @@
 #define RIGHT_BTN_PIN 6
 #define LIGHT_BTN_PIN 7
 
-/*
 #define SPEED_PIN 47
 
-#define LEFT_CTL_PIN 42
-#define RIGHT_CTL_PIN 45
-#define LIGHT_CTL_PIN 39
+#define LEFT_CTL_PIN 39
+#define RIGHT_CTL_PIN 48
+#define LIGHT_CTL_PIN 42
+#define RESERVE_CTL_PIN 45
 
 #define IIC_SDA 1
 #define IIC_SCL 2
@@ -24,7 +24,7 @@
 #define UART_RX 41
 #define UART_TX 40
 
-*/
+/*
 #define SPEED_PIN 38
 
 #define LEFT_CTL_PIN 35
@@ -37,3 +37,5 @@
 
 #define UART_RX 21
 #define UART_TX 20
+
+*/

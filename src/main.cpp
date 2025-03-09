@@ -8,45 +8,11 @@
 #include "sensor.h"
 #include "consts.h"
 
+#define DEV 0
+
 void scanI2c();
 
-
-void setup3()
-{
-  /*
-  48
-  47x
-  46
-  45
-  42x
-  41
-  40
-  39
-  */
-  
-  Serial.println("begin");
-	pinMode(48, OUTPUT);
-	pinMode(47, OUTPUT);
-	pinMode(46, OUTPUT);
-	pinMode(45, OUTPUT);
-	pinMode(42, OUTPUT);
-	pinMode(41, OUTPUT);
-	pinMode(40, OUTPUT);
-	pinMode(39, OUTPUT);
-
-}
-
-void loop3()
-{
-  int pin = 39;
-  Serial.println("low");
-  digitalWrite(pin, LOW);
-  delay(1000);
-  Serial.println("high");
-  digitalWrite(pin, HIGH);
-  delay(1000);
-}
-
+#if DEV == 0
 void setup()
 {
   Serial.begin(9600);
@@ -64,6 +30,61 @@ void loop()
 {
   vTaskDelay(50 / portTICK_PERIOD_MS);
 }
+
+#else
+
+void setup()
+{
+  /*
+  48
+  47x
+  46
+  45
+  42x
+  41
+  40
+  39
+  */
+
+  Serial.println("begin");
+  pinMode(48, OUTPUT);
+  pinMode(47, OUTPUT);
+  pinMode(46, OUTPUT);
+  pinMode(45, OUTPUT);
+  pinMode(42, OUTPUT);
+  pinMode(41, OUTPUT);
+  pinMode(40, OUTPUT);
+  pinMode(39, OUTPUT);
+}
+
+void loop()
+{
+  int pin = 40;
+  Serial.println("low");
+  digitalWrite(48, LOW);
+  digitalWrite(47, LOW);
+  digitalWrite(46, LOW);
+  digitalWrite(45, LOW);
+  digitalWrite(42, LOW);
+  digitalWrite(41, LOW);
+  digitalWrite(40, LOW);
+  digitalWrite(39, LOW);
+ // digitalWrite(pin, LOW);
+  delay(1000);
+  Serial.println("high");
+  digitalWrite(48, HIGH);
+  digitalWrite(47, HIGH);
+  digitalWrite(46, HIGH);
+  digitalWrite(45, HIGH);
+  digitalWrite(42, HIGH);
+  digitalWrite(41, HIGH);
+  digitalWrite(40, HIGH);
+  digitalWrite(39, HIGH);
+// digitalWrite(pin, HIGH);
+  delay(1000);
+}
+
+#endif
 
 void scanI2c()
 {

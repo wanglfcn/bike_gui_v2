@@ -15,7 +15,6 @@ TaskHandle_t updateSensorHandler;
 void updateTemperature()
 {
   sensors_event_t humidity, temp;
-
   aht.getEvent(&humidity, &temp);
   char data[30];
   sprintf(data, "%d°C", (int)(temp.temperature));

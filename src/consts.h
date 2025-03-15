@@ -13,7 +13,7 @@
 #define SPEED_PIN 47
 
 #define LEFT_CTL_PIN 39
-#define RIGHT_CTL_PIN 48
+#define RIGHT_CTL_PIN 46
 #define LIGHT_CTL_PIN 42
 #define RESERVE_CTL_PIN 45
 

@@ -242,7 +242,9 @@ void updateGPSTask(void *param)
     {
         while (ss.available())
         {
-            if (gps.encode(ss.read()))
+            char val = ss.read();
+           // Serial.print(val);
+            if (gps.encode(val))
             {
 
                 if (gps.satellites.isValid() && gps.satellites.isUpdated())
